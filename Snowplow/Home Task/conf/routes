@@ -1,0 +1,11 @@
+# Routes
+# This file defines all application routes (Higher priority routes first)
+# ~~~~
+
+
+#Upload a JSON Schema with unique `SCHEMAID`
+POST    /schema/:SCHEMAID           controllers.schemaController.upload(SCHEMAID: String)
+#Download a JSON Schema with unique `SCHEMAID`
+#GET     /schema/:SCHEMAID
+#Validate a JSON document against the JSON Schema identified by `SCHEMAID`
+#POST    /validate/:SCHEMAID
