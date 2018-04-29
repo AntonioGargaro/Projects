@@ -4,8 +4,9 @@
 
 
 #Upload a JSON Schema with unique `SCHEMAID`
-POST    /schema/:SCHEMAID           controllers.schemaController.upload(SCHEMAID: String)
-#Download a JSON Schema with unique `SCHEMAID`
-#GET     /schema/:SCHEMAID
+POST    /schema/:SCHEMAID           controllers.schemaController.uploadSchema(SCHEMAID: String)
+#Dowload a JSON Schema with unique `SCHEMAID`
+GET    /schema/:SCHEMAID            controllers.schemaController.downloadSchema(SCHEMAID: String)
+
 #Validate a JSON document against the JSON Schema identified by `SCHEMAID`
-#POST    /validate/:SCHEMAID
+POST    /validate/:SCHEMAID        controllers.schemaController.validate(SCHEMAID: String)
