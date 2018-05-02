@@ -37,7 +37,7 @@ curl.exe http://localhost/schema/config-schema -X POST -d @config-schema.json
 ## Dependencies/Libraries
 
 - [JSON Schema Validator](https://github.com/daveclayton/json-schema-validator) was used as stated by the task spec.
-- [Jackson Core] (https://github.com/FasterXML/jackson-core) which is required for [JSON Schema Validator](https://github.com/daveclayton/json-schema-validator).
+- [Jackson Core](https://github.com/FasterXML/jackson-core) which is required for [JSON Schema Validator](https://github.com/daveclayton/json-schema-validator).
 
 ## Development Timeline & Notes
 
@@ -50,7 +50,7 @@ curl.exe http://localhost/schema/config-schema -X POST -d @config-schema.json
 	Implemented JSON validation for the schema file.
 	Currently implementing JSON data 'cleaning' which is the removal of null keys. Need to fix nested nulls.
 	Focus will then be finishing validation of external library then code tidy.
-	I also installed external lib and updated version of [Jackson Core](https://github.com/FasterXML/jackson-core) as required for json-schema-validator **_/lib/jackson-core-2.9.5.jar_*.
+	I also installed external lib and updated version of [Jackson Core](https://github.com/FasterXML/jackson-core) as required for json-schema-validator **_/lib/jackson-core-2.9.5.jar_**.
 
 - **29/04/18** - 
 	Completed the JSON Schema and Data files upload.
