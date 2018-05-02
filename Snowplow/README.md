@@ -44,6 +44,11 @@ curl.exe http://localhost/schema/config-schema -X POST -d @config-schema.json
 	Prior to this task I had never used Scala however I have used Object Orientated and Functional programming languages. 
 	There was a slight learning curve to this task but from what I have accomplished so far has furthered my understanding of RESTful API's, working with frameworks and the Scala language. 
 	I have also learned that Google is my best friend.
+	
+- **02/05/2018** -
+	Implemented JSON validation for the schema file.
+	Currently implementing JSON data 'cleaning' which is the removal of null keys. Need to fix nested nulls.
+	Focus will then be finishing validation of external library then code tidy.
 
 - **29/04/18** - 
 	Completed the JSON Schema and Data files upload.
