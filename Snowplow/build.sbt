@@ -1,4 +1,4 @@
-name := """play-scala-starter-example"""
+name := """Json-Schema-Validator"""
 
 version := "1.0-SNAPSHOT"
 

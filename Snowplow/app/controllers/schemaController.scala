@@ -4,6 +4,7 @@ import java.io.{File, FileInputStream, IOException}
 
 import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.databind.{JsonNode, ObjectMapper}
+import com.github.fge.jsonschema.core.report.{ProcessingMessage, ProcessingReport}
 import com.github.fge.jsonschema.main.{JsonSchema, JsonSchemaFactory}
 import javax.inject._
 import models.{SchemaAction, SchemaActionMsg}
@@ -69,48 +70,70 @@ class schemaController @Inject()(cc: ControllerComponents) (implicit assetsFinde
   }
 
   def validate(SCHEMAID: String) = Action(parse.temporaryFile) { request =>
-    val schema = new File(s"tmp/$SCHEMAID.json")
-    if (schema.exists()) {
+    val schemaFile = new File(s"tmp/$SCHEMAID.json")
+
+    if (schemaFile.exists()) {
       try {
+        /* Upload JSON data file */
         uploadFile(SCHEMAID + "-data", request)
       } catch {
         case ioe: IOException => InternalServerError(schemaActionResponse("uploadSchema", SCHEMAID, "fail", "Couldn't upload file"))
         case e: Exception => InternalServerError(schemaActionResponse("uploadSchema", SCHEMAID, "fail", "Something went wrong"))
       }
 
+      /* Read both SCHEMA file and DATA file */
       val dataFile = new File(s"tmp/$SCHEMAID-data.json")
-      val datastream = new FileInputStream(dataFile)
-      val schemastream = new FileInputStream(schema)
+      val dataStream = new FileInputStream(dataFile)
+      val schemaStream = new FileInputStream(schemaFile)
 
+      /* Used to make JsonNode for SCHEMA and DATA */
       val mapper: ObjectMapper = new ObjectMapper()
 
-      val jsonSchema: JsonNode = try { mapper.readTree(Json.parse(schemastream).toString()) } finally { schemastream.close }
+      /* Make nodes from file streams */
+      val jsonSchema: JsonNode = try { mapper.readTree(Json.parse(schemaStream).toString()) } finally { schemaStream.close }
+      val jsonDataNode: JsonNode = try { mapper.readTree(clean(Json.parse(dataStream)).toString()) } finally { dataStream.close }
 
-      val jsonData: JsValue = Json.parse(datastream)
-      val jsonData2: JsObject = JsObject(jsonData.as[JsObject].fields.filterNot(k => withoutValue(k._2)))
-      println(jsonData2)
-
-      val jsonDataNode: JsonNode = try { mapper.readTree(jsonData2.toString()) } finally { datastream.close }
-
-
+      /* Schema validation */
       val factory: JsonSchemaFactory = JsonSchemaFactory.byDefault()
+      val schema: JsonSchema = factory.getJsonSchema(jsonSchema)
+      val pr: ProcessingReport = schema.validate(jsonDataNode)
 
-      val schema1: JsonSchema = factory.getJsonSchema(jsonSchema)
+      if(pr.isSuccess){
+        Ok( schemaActionResponse("validateDocument", SCHEMAID, "success") )
+      } else {
+        var errormessage: String = ""
+        pr.forEach({ message: ProcessingMessage =>
+          errormessage = message.getMessage
+        })
+        BadRequest(schemaActionResponse("validateDocument", SCHEMAID, "fail", errormessage))
+      }
 
-      //println(schema1.validate(jsonDataNode))
 
-      Ok("STILL TO IMPLEMENT")
     } else
       BadRequest( schemaActionResponse("downloadSchema", SCHEMAID, "fail", s"${SCHEMAID}.json does not exist") );
   }
 
-  def withoutValue(v: Any):Boolean = {
-    println(v.getClass) ;
+  /* Recursive remove all nulls */
+  def clean(json: JsValue): JsObject = {
+    var newObj = Json.obj()
+    val it: Iterator[(String, JsValue)] = json.as[JsObject].fields.iterator
+    while(it.hasNext) {
+      var temp: (String, JsValue) = it.next()
+      if (temp._2.asOpt[JsObject] != None){
+        temp = (temp._1, clean(temp._2))
+      }
+      if(!withoutValue(temp._2)){
+        newObj = newObj + temp
+      }
+    }
+    newObj
+  }
+
+  def withoutValue(v: JsValue):Boolean = {
     v match {
       case JsNull => true
       case JsString("") => true
       case _ => false
-
     }
   }
 

@@ -45,6 +45,9 @@ curl.exe http://localhost/schema/config-schema -X POST -d @config-schema.json
 	Prior to this task I had never used Scala however I have used Object Orientated and Functional programming languages. 
 	There was a slight learning curve to this task but from what I have accomplished so far has furthered my understanding of RESTful API's, working with frameworks and the Scala language. 
 	I have also learned that Google is my best friend.
+
+- **03/05/2018** -
+	Implemented validator fully. Just need to refine code and test fully.
 	
 - **02/05/2018** -
 	Implemented JSON validation for the schema file.
