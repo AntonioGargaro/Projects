@@ -90,6 +90,8 @@ The files I worked on for this task are at the following:
 -	**Snowplow/app/controllers/schemaController.scala**
 -	**Snowplow/app/models/schemaActions.scala**
 
+### Timeline
+
 - **04/05/2018** -
 	Refined code to catch exceptions. Code tidy and commented. Updated README.md Is now fully functional.
 	
