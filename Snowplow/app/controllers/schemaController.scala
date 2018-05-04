@@ -1,8 +1,8 @@
 package controllers
 
 import java.io.{File, FileInputStream, IOException}
-
 import com.fasterxml.jackson.core.JsonParseException
+import com.fasterxml.jackson.core.io.JsonEOFException
 import com.fasterxml.jackson.databind.{JsonNode, ObjectMapper}
 import com.github.fge.jsonschema.core.report.{ProcessingMessage, ProcessingReport}
 import com.github.fge.jsonschema.main.{JsonSchema, JsonSchemaFactory}
@@ -12,25 +12,34 @@ import play.api.libs.Files
 import play.api.mvc._
 import play.api.libs.json._
 
-
 class schemaController @Inject()(cc: ControllerComponents) (implicit assetsFinder: AssetsFinder)
   extends AbstractController(cc){
 
-  def uploadFile(SCHEMAID: String, request: Request[Files.TemporaryFile]) = {
-    /* Saves request body to temporary file */
-    val file = new File(s"tmp/$SCHEMAID.json")
-    request.body.moveTo(file, replace = true)
+  def uploadFile(SCHEMAID: String, request: Request[Files.TemporaryFile]):Boolean = {
+
+    try {
+      /* Check tmp directory exists */
+      val directory = new File("tmp/");
+      if(!directory.exists())
+        directory.mkdirs()
+
+      /* Saves request body to temporary file */
+      val file = new File(s"tmp/$SCHEMAID.json")
+      request.body.moveTo(file, replace = true)
+      true
+    } catch {
+      case ioe: IOException =>
+        InternalServerError(schemaActionResponse("uploadSchema", SCHEMAID, "fail", "Couldn't upload file")); false
+      case e: Exception =>
+        InternalServerError(schemaActionResponse("uploadSchema", SCHEMAID, "fail", "Something went wrong")); false
+    }
   }
 
   def uploadSchema(SCHEMAID: String) = Action(parse.temporaryFile) { request =>
     if (request.hasBody) {
 
       /* Upload SCHEMA file */
-      try { uploadFile(SCHEMAID, request) }
-      catch {
-        case ioe: IOException => InternalServerError(schemaActionResponse("uploadSchema", SCHEMAID, "fail", "Couldn't upload file"))
-        case e: Exception => InternalServerError(schemaActionResponse("uploadSchema", SCHEMAID, "fail", "Something went wrong"))
-      }
+      uploadFile(SCHEMAID, request)
 
       val schemaFile = new File(s"tmp/$SCHEMAID.json")
 
@@ -41,11 +50,13 @@ class schemaController @Inject()(cc: ControllerComponents) (implicit assetsFinde
           Created(schemaActionResponse("uploadSchema", SCHEMAID, "success"))
         }
         catch {
-          case e: JsonParseException => {
+          case json: JsonParseException => {
             /* Close stream and delete file */
             stream.close() ; schemaFile.delete()
             InternalServerError(schemaActionResponse("uploadSchema", SCHEMAID, "fail", "Invalid Json"))
           }
+          case e: Exception =>
+            InternalServerError(schemaActionResponse("uploadSchema", SCHEMAID, "fail", e.getMessage))
         } finally { stream.close() }
 
       } else
@@ -75,56 +86,66 @@ class schemaController @Inject()(cc: ControllerComponents) (implicit assetsFinde
     if (schemaFile.exists()) {
       try {
         /* Upload JSON data file */
-        uploadFile(SCHEMAID + "-data", request)
+        if(uploadFile(SCHEMAID + "-data", request)){
+          /* Read both SCHEMA file and DATA file */
+          val dataFile = new File(s"tmp/$SCHEMAID-data.json")
+          val dataStream = new FileInputStream(dataFile)
+          val schemaStream = new FileInputStream(schemaFile)
+
+
+          /* Used to make JsonNode for SCHEMA and DATA */
+          val mapper: ObjectMapper = new ObjectMapper()
+
+          /* Make nodes from file streams */
+          val jsonSchema: JsonNode = try { mapper.readTree(Json.parse(schemaStream).toString()) } finally { schemaStream.close }
+          val jsonDataNode: JsonNode = try { mapper.readTree(clean(Json.parse(dataStream)).toString()) } finally { dataStream.close }
+
+          /* Schema validation */
+          val factory: JsonSchemaFactory = JsonSchemaFactory.byDefault()
+          val schema: JsonSchema = factory.getJsonSchema(jsonSchema)
+          val pr: ProcessingReport = schema.validate(jsonDataNode)
+
+          /* Delete Datafile when finished */
+          dataFile.delete()
+
+          if(pr.isSuccess){
+            Ok( schemaActionResponse("validateDocument", SCHEMAID, "success") )
+          } else {
+            var errormessage: String = ""
+            pr.forEach({ message: ProcessingMessage =>
+              errormessage = message.getMessage
+            })
+            BadRequest(schemaActionResponse("validateDocument", SCHEMAID, "fail", errormessage))
+          }
+        } else
+          InternalServerError(schemaActionResponse("validateDocument", SCHEMAID, "fail", "Data file failed to upload"))
       } catch {
-        case ioe: IOException => InternalServerError(schemaActionResponse("uploadSchema", SCHEMAID, "fail", "Couldn't upload file"))
-        case e: Exception => InternalServerError(schemaActionResponse("uploadSchema", SCHEMAID, "fail", "Something went wrong"))
+        case json @ (_ : JsonParseException | _ : JsonEOFException) =>
+          InternalServerError(schemaActionResponse("validateDocument", SCHEMAID, "fail", json.getMessage))
+        case io : IOException =>
+          InternalServerError(schemaActionResponse("validateDocument", SCHEMAID, "fail", io.getMessage))
+        case e : Exception =>
+          InternalServerError(schemaActionResponse("validateDocument", SCHEMAID, "fail", "Unexpected Error"))
       }
-
-      /* Read both SCHEMA file and DATA file */
-      val dataFile = new File(s"tmp/$SCHEMAID-data.json")
-      val dataStream = new FileInputStream(dataFile)
-      val schemaStream = new FileInputStream(schemaFile)
-
-      /* Used to make JsonNode for SCHEMA and DATA */
-      val mapper: ObjectMapper = new ObjectMapper()
-
-      /* Make nodes from file streams */
-      val jsonSchema: JsonNode = try { mapper.readTree(Json.parse(schemaStream).toString()) } finally { schemaStream.close }
-      val jsonDataNode: JsonNode = try { mapper.readTree(clean(Json.parse(dataStream)).toString()) } finally { dataStream.close }
-
-      /* Schema validation */
-      val factory: JsonSchemaFactory = JsonSchemaFactory.byDefault()
-      val schema: JsonSchema = factory.getJsonSchema(jsonSchema)
-      val pr: ProcessingReport = schema.validate(jsonDataNode)
-
-      if(pr.isSuccess){
-        Ok( schemaActionResponse("validateDocument", SCHEMAID, "success") )
-      } else {
-        var errormessage: String = ""
-        pr.forEach({ message: ProcessingMessage =>
-          errormessage = message.getMessage
-        })
-        BadRequest(schemaActionResponse("validateDocument", SCHEMAID, "fail", errormessage))
-      }
-
 
     } else
-      BadRequest( schemaActionResponse("downloadSchema", SCHEMAID, "fail", s"${SCHEMAID}.json does not exist") );
+      BadRequest( schemaActionResponse("downloadSchema", SCHEMAID, "fail", s"${SCHEMAID}.json does not exist") )
   }
 
   /* Recursive remove all nulls */
   def clean(json: JsValue): JsObject = {
     var newObj = Json.obj()
+
+    /* Iterate over each element in JsObject */
     val it: Iterator[(String, JsValue)] = json.as[JsObject].fields.iterator
     while(it.hasNext) {
       var temp: (String, JsValue) = it.next()
-      if (temp._2.asOpt[JsObject] != None){
+
+      if (temp._2.asOpt[JsObject] != None)
         temp = (temp._1, clean(temp._2))
-      }
-      if(!withoutValue(temp._2)){
+
+      if(!withoutValue(temp._2))
         newObj = newObj + temp
-      }
     }
     newObj
   }

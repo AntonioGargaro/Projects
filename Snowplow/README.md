@@ -4,7 +4,9 @@ This task was to create a JSON upload service for a JSON schema and validate the
 
 ## Running
 
-Run this using [sbt](http://www.scala-sbt.org/).  You'll find a prepackaged version of sbt in the project directory:
+Run this using [sbt](http://www.scala-sbt.org/).  You'll find a prepackaged version of sbt in the project directory.
+
+Open a terminal in the project directory and issue the following for your system:
 
 Using bash script:
 ```bash
@@ -28,11 +30,47 @@ Using Windows cmd:
 curl.exe http://localhost/schema/config-schema -X POST -d @config-schema.json
 ```
 
+You can also execute [cURL](https://curl.haxx.se/download.html) commands to download the JSON schema file 'config-schema.json'.
+
+Using bash script:
+```bash
+curl http://localhost/schema/config-schema -X GET -d @config-schema.json
+```
+Using Windows cmd:
+```cmd
+curl.exe http://localhost/schema/config-schema -X GET -d @config-schema.json
+```
+
+You can also execute [cURL](https://curl.haxx.se/download.html) commands to validate a JSON file 'config.json' against it's schema.
+
+Using bash script:
+```bash
+curl http://localhost/validate/config-schema -X POST -d @config.json
+```
+Using Windows cmd:
+```cmd
+curl.exe http://localhost/validate/config-schema -X POST -d @config.json
+```
+
+All responses are in JSON format and appropriate to each condition.
+
 ## Controllers
 
 - schemaController.scala:
 
-  This controller handles the uploading of JSON files and downloading of the JSON Schema file.
+  This controller handles the uploading of JSON files, downloading of the JSON Schema file and validating the data against the schema.
+  
+## Models
+- schemaActions.scala:
+
+  This model writes arguments to a class in Json format. This is used to return Json responses.
+  
+## Routes
+- routes:
+  This file defines all of the applications routes.
+  
+## Framework
+- I used the [Play Framework](https://www.playframework.com/download) as from my research it is lightweight, fast and intuitive to use.  
   
 ## Dependencies/Libraries
 
@@ -43,9 +81,18 @@ curl.exe http://localhost/schema/config-schema -X POST -d @config-schema.json
 
 ### General Notes
 	Prior to this task I had never used Scala however I have used Object Orientated and Functional programming languages. 
-	There was a slight learning curve to this task but from what I have accomplished so far has furthered my understanding of RESTful API's, working with frameworks and the Scala language. 
+	There was a slight learning curve to this task but from what I have accomplished so far has furthered my understanding of RESTful API's, working with the [Play Framework](https://www.playframework.com/download). and the Scala language. 
 	I have also learned that Google is my best friend.
 
+### File Locations
+The files I worked on for this task are at the following:
+- 	**Snowplow/conf/routes**
+-	**Snowplow/app/controllers/schemaController.scala**
+-	**Snowplow/app/models/schemaActions.scala**
+
+- **04/05/2018** -
+	Refined code to catch exceptions. Code tidy and commented. Updated README.md Is now fully functional.
+	
 - **03/05/2018** -
 	Implemented validator fully. Just need to refine code and test fully.
 	
@@ -68,7 +115,7 @@ curl.exe http://localhost/schema/config-schema -X POST -d @config-schema.json
 
 - **27/04/18** - 
 	Starting work on the project. 
-	I firstly researched [cURL](https://curl.haxx.se/download.html) and installed this into my system32 folder.
+	I firstly researched [cURL](https://curl.haxx.se/download.html) and downloaded this to the project folder.
 
 	I then looked into using a framework to aid implementation. I chose to use the Play framework as it looks easy to use, lightweight and very fast.
 
