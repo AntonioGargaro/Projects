@@ -3,7 +3,7 @@
 This task was to create a JSON upload service for a JSON schema and validate the schema against JSON data.
 
 ## Running
-
+This is assuming [JDK](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html) and [cURL](https://curl.haxx.se/download.html) are already installed on your system.
 Run this using [sbt](http://www.scala-sbt.org/).  You'll find a prepackaged version of sbt in the project directory.
 
 Open a terminal in the project directory and issue the following for your system:
@@ -14,7 +14,7 @@ sbt "run 80"
 ```
 Using Windows cmd:
 ```bash
-sbt.bat "run 80"
+.\sbt.bat "run 80"
 ```
 
 Then the web application will be running on <http://localhost>.
