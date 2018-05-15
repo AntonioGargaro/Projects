@@ -4,5 +4,5 @@ Hi! This project is a link to my 3rd year group project and a little bit about w
 
 There is also a fully functional waiter system and kitchen system. If you'd like to know more just contact me.
 
-### View the website [here](www2.macs.hw.ac.uk/~ajg2/snowbonk/)
-
+### View the website [here](http://www2.macs.hw.ac.uk/~ajg2/snowbonk/)
+> http://www2.macs.hw.ac.uk/~ajg2/snowbonk/
